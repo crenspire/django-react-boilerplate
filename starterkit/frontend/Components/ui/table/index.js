@@ -1,0 +1,6 @@
+export { Table } from "./Table.jsx"
+export { TableHeader } from "./TableHeader.jsx"
+export { TableBody } from "./TableBody.jsx"
+export { TableRow } from "./TableRow.jsx"
+export { TableHead } from "./TableHead.jsx"
+export { TableCell } from "./TableCell.jsx"
