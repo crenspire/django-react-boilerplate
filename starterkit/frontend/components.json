@@ -1,10 +1,10 @@
 {
-  "style": "default",
+  "style": "new-york",
   "typescript": false,
   "tailwind": {
     "config": "tailwind.config.js",
     "css": "main.css",
-    "baseColor": "slate",
+    "baseColor": "zinc",
     "cssVariables": true
   },
   "aliases": {

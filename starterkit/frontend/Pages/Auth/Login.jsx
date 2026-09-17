@@ -1,93 +1,92 @@
-import React from "react"
-import { useForm } from "@inertiajs/react"
+import * as React from "react"
+import { Head, useForm, usePage } from "@inertiajs/react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { Button } from "@/Components/ui/button"
 import { Input } from "@/Components/ui/input"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/Components/ui/card"
-import { Alert, AlertDescription } from "@/Components/ui/alert"
+import { ErrorSummary } from "@/Components/admin/ErrorSummary"
+import { FlashMessages } from "@/Components/admin/FlashMessages"
 import { FormField } from "@/Components/admin/FormField"
-import { AlertCircle } from "lucide-react"
+import { useRoute } from "@/composables/useRoute"
 import { AuthLayout } from "@/Layouts/AuthLayout"
+import { cn } from "@/lib/utils"
 
-export default function Login({ form: formInitial = {}, errors = {} }) {
-  const loginForm = useForm({
-    username: formInitial?.username ?? "",
-    password: formInitial?.password ?? "",
-    next: formInitial?.next ?? "/admin/",
-  })
+export default function Login({ form: initialForm, errors = {} }) {
+  const route = useRoute()
+  const { flash } = usePage().props
+  const loginForm = useForm(initialForm)
+  const [showPassword, setShowPassword] = React.useState(false)
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    loginForm.post("/admin/login/")
+    loginForm.post(route("login"), {
+      onFinish: () => loginForm.setData("password", ""),
+    })
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>
-          Enter your credentials to access the admin panel
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {errors?.non_field_errors?.length > 0 && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {errors.non_field_errors.map((msg, i) => (
-                <span key={i}>{msg}</span>
-              ))}
-            </AlertDescription>
-          </Alert>
-        )}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <Head title="Sign in" />
+      <div className="flex flex-col gap-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-balance text-sm text-muted-foreground">
+          Sign in with your staff account to continue
+        </p>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="hidden" name="next" value={loginForm.data.next} />
+      <FlashMessages messages={flash} />
+      <ErrorSummary errors={{ non_field_errors: errors.non_field_errors ?? [] }} />
 
-          <FormField
-            label="Username"
-            htmlFor="username"
-            error={errors?.username?.[0]}
-          >
-            <Input
-              id="username"
-              value={loginForm.data.username}
-              onChange={(e) => loginForm.setData("username", e.target.value)}
-              type="text"
-              autoComplete="username"
-              placeholder="Enter your username"
-              className={errors?.username?.length ? "border-destructive" : ""}
-            />
-          </FormField>
+      <div className="grid gap-5">
+        <FormField label="Username" htmlFor="username" error={errors.username?.[0]}>
+          <Input
+            id="username"
+            value={loginForm.data.username}
+            onChange={(e) => loginForm.setData("username", e.target.value)}
+            type="text"
+            autoComplete="username"
+            autoFocus
+            placeholder="admin"
+            aria-invalid={errors.username?.length ? true : undefined}
+            className={cn(errors.username?.length && "border-destructive focus-visible:ring-destructive")}
+          />
+        </FormField>
 
-          <FormField
-            label="Password"
-            htmlFor="password"
-            error={errors?.password?.[0]}
-          >
+        <FormField label="Password" htmlFor="password" error={errors.password?.[0]}>
+          <div className="relative">
             <Input
               id="password"
               value={loginForm.data.password}
               onChange={(e) => loginForm.setData("password", e.target.value)}
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              placeholder="Enter your password"
-              className={errors?.password?.length ? "border-destructive" : ""}
+              aria-invalid={errors.password?.length ? true : undefined}
+              className={cn("pr-10", errors.password?.length && "border-destructive focus-visible:ring-destructive")}
             />
-          </FormField>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-0.5 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? <EyeOff /> : <Eye />}
+            </Button>
+          </div>
+        </FormField>
 
-          <Button type="submit" className="w-full" disabled={loginForm.processing}>
-            Sign in
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" className="w-full" disabled={loginForm.processing}>
+          {loginForm.processing && <Loader2 className="animate-spin" />}
+          Sign in
+        </Button>
+      </div>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Need access? Ask an administrator to create an account for you.
+      </p>
+    </form>
   )
 }
 
-Login.layout = AuthLayout
+Login.layout = (page) => <AuthLayout>{page}</AuthLayout>

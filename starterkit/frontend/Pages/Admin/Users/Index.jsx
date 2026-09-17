@@ -1,225 +1,168 @@
-import React from "react"
-import { Link, useForm, router } from "@inertiajs/react"
+import * as React from "react"
+import { Head, Link, router } from "@inertiajs/react"
+import { MoreHorizontal, Pencil, Plus, Trash2, UserX } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/Components/ui/avatar"
 import { Button } from "@/Components/ui/button"
-import { Badge } from "@/Components/ui/badge"
-import { Card, CardContent } from "@/Components/ui/card"
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/Components/ui/table"
-import { Alert, AlertDescription } from "@/Components/ui/alert"
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table"
+import { DataTablePagination } from "@/Components/admin/DataTablePagination"
+import { DeleteConfirmDialog } from "@/Components/admin/DeleteConfirmDialog"
 import { PageHeader } from "@/Components/admin/PageHeader"
 import { SearchBar } from "@/Components/admin/SearchBar"
 import { SortableHeader } from "@/Components/admin/SortableHeader"
-import { DataTablePagination } from "@/Components/admin/DataTablePagination"
-import { DeleteConfirmDialog } from "@/Components/admin/DeleteConfirmDialog"
-import { Plus, MoreHorizontal, Pencil, Trash2, AlertCircle } from "lucide-react"
+import { RoleBadge, StatusBadge } from "@/Components/admin/UserBadges"
+import { useListFilters } from "@/composables/useListFilters"
+import { useRoute } from "@/composables/useRoute"
 import { AdminLayout } from "@/Layouts/AdminLayout"
+import { getDisplayName, getUserInitials } from "@/lib/user"
 
-export default function UsersIndex({
-  users = [],
-  pagination,
-  filters = {},
-  errors = {},
-}) {
-  const searchForm = useForm({
-    search: filters?.search ?? "",
-  })
-
+export default function UsersIndex({ users, pagination, filters, can }) {
+  const route = useRoute()
+  const { search, setSearch, sortBy, pageUrl } = useListFilters("admin_users", filters)
   const [deleteTarget, setDeleteTarget] = React.useState(null)
+  const [deleting, setDeleting] = React.useState(false)
 
-  const currentOrderBy = filters?.order_by ?? "username"
-
-  const doSearch = () => {
-    router.get("/admin/users/", {
-      search: searchForm.data.search,
-      order_by: currentOrderBy,
-    }, { preserveState: true })
+  const confirmDelete = () => {
+    router.post(route("admin_user_delete", { user_id: deleteTarget.id }), {}, {
+      onStart: () => setDeleting(true),
+      onFinish: () => {
+        setDeleting(false)
+        setDeleteTarget(null)
+      },
+    })
   }
 
-  const clearSearch = () => {
-    router.get("/admin/users/", { order_by: currentOrderBy }, { preserveState: true })
-  }
-
-  const onSort = (orderBy) => {
-    router.get("/admin/users/", {
-      search: filters?.search || "",
-      order_by: orderBy,
-    }, { preserveState: true })
-  }
-
-  const buildPageUrl = (page) => {
-    const params = new URLSearchParams()
-    if (filters?.search) params.set("search", filters.search)
-    if (currentOrderBy) params.set("order_by", currentOrderBy)
-    params.set("page", page)
-    return `/admin/users/?${params.toString()}`
-  }
+  const sortHeader = (field, label) => (
+    <SortableHeader field={field} currentOrderBy={filters.order_by} label={label} onSort={sortBy} />
+  )
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Users">
-        <Link href="/admin/users/create/">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add user
+    <>
+      <Head title="Users" />
+      <PageHeader title="Users" description="Manage accounts, roles and who can sign in.">
+        {can.add && (
+          <Button asChild>
+            <Link href={route("admin_user_create")}>
+              <Plus />
+              Add user
+            </Link>
           </Button>
-        </Link>
+        )}
       </PageHeader>
 
-      {errors?.non_field_errors?.length > 0 && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {errors.non_field_errors.map((msg, i) => (
-              <span key={i}>{msg}</span>
-            ))}
-          </AlertDescription>
-        </Alert>
-      )}
+      <div className="flex flex-col gap-4">
+        <SearchBar value={search} onChange={setSearch} placeholder="Filter by username or email…" />
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <SearchBar
-              value={searchForm.data.search}
-              onChange={(v) => searchForm.setData("search", v)}
-              onSearch={doSearch}
-              onClear={clearSearch}
-              placeholder="Search username or email..."
-            />
-
-            <div className="overflow-x-auto -mx-1">
-              <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <SortableHeader
-                      field="username"
-                      currentOrderBy={currentOrderBy}
-                      label="Username"
-                      onSort={onSort}
-                    />
-                  </TableHead>
-                  <TableHead>
-                    <SortableHeader
-                      field="email"
-                      currentOrderBy={currentOrderBy}
-                      label="Email"
-                      onSort={onSort}
-                    />
-                  </TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow className="hover:bg-transparent">
+                <TableHead>{sortHeader("username", "User")}</TableHead>
+                <TableHead className="hidden md:table-cell">{sortHeader("email", "Email")}</TableHead>
+                <TableHead>{sortHeader("is_active", "Status")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{sortHeader("is_staff", "Role")}</TableHead>
+                <TableHead className="w-12">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!users.length && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={5} className="h-40">
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <UserX className="h-8 w-8 text-muted-foreground" />
+                      <p className="font-medium">No users found</p>
+                      <p className="text-sm text-muted-foreground">
+                        {filters.search ? "Try a different search term." : "Create the first account to get started."}
+                      </p>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!users.length && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      No users found.
-                    </TableCell>
-                  </TableRow>
-                )}
-                {users.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">
-                      <Link
-                        href={`/admin/users/${u.id}/edit/`}
-                        className="hover:underline"
-                      >
-                        {u.username}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {u.email || "-"}
-                    </TableCell>
-                    <TableCell>
-                      {u.is_active ? (
-                        <Badge
-                          variant="outline"
-                          className="border-green-200 bg-green-50 text-green-700"
-                        >
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="border-red-200 bg-red-50 text-red-700"
-                        >
-                          Inactive
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {u.is_superuser ? (
-                          <Badge variant="default">superuser</Badge>
-                        ) : u.is_staff ? (
-                          <Badge variant="secondary">staff</Badge>
-                        ) : null}
+              )}
+              {users.map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs font-medium">{getUserInitials(u)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        {u.can_edit ? (
+                          <Link
+                            href={route("admin_user_edit", { user_id: u.id })}
+                            className="font-medium underline-offset-4 hover:underline"
+                          >
+                            {getDisplayName(u)}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{getDisplayName(u)}</span>
+                        )}
+                        <p className="truncate text-xs text-muted-foreground">@{u.username}</p>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-right">
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden text-muted-foreground md:table-cell">{u.email || "—"}</TableCell>
+                  <TableCell>
+                    <StatusBadge active={u.is_active} />
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <RoleBadge isStaff={u.is_staff} isSuperuser={u.is_superuser} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {(u.can_edit || u.can_delete) && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8 data-[state=open]:bg-muted" aria-label={`Actions for ${u.username}`}>
+                            <MoreHorizontal />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => router.visit(`/admin/users/${u.id}/edit/`)}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive cursor-pointer"
-                            onClick={() => setDeleteTarget(u)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
+                        <DropdownMenuContent align="end" className="w-40">
+                          {u.can_edit && (
+                            <DropdownMenuItem className="gap-2" onSelect={() => router.visit(route("admin_user_edit", { user_id: u.id }))}>
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {u.can_edit && u.can_delete && <DropdownMenuSeparator />}
+                          {u.can_delete && (
+                            <DropdownMenuItem
+                              className="gap-2 text-destructive focus:text-destructive"
+                              onSelect={() => setDeleteTarget(u)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
-            <DataTablePagination pagination={pagination} buildUrl={buildPageUrl} />
+        <DataTablePagination pagination={pagination} buildUrl={pageUrl} itemLabel="users" />
+      </div>
 
-            {deleteTarget && (
-              <DeleteConfirmDialog
-                open={!!deleteTarget}
-                onOpenChange={(v) => !v && setDeleteTarget(null)}
-                deleteUrl={`/admin/users/${deleteTarget.id}/delete/`}
-                title="Delete user"
-                description={`Are you sure you want to delete '${deleteTarget.username}'? This action cannot be undone.`}
-              />
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <DeleteConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        processing={deleting}
+        title="Delete user"
+        description={`Are you sure you want to delete "${deleteTarget?.username}"? This action cannot be undone.`}
+      />
+    </>
   )
 }
 
-UsersIndex.layout = AdminLayout
+UsersIndex.layout = (page) => <AdminLayout breadcrumbs={[{ label: "Users" }]}>{page}</AdminLayout>

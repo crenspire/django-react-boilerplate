@@ -1,28 +1,23 @@
-import * as React from "react"
-import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react"
+import { Button } from "@/Components/ui/button"
 
+/** Column header that cycles ascending → descending (shadcn data-table style). */
 export function SortableHeader({ field, currentOrderBy, label, onSort }) {
-  const sortDirection =
-    currentOrderBy === field ? "asc" : currentOrderBy === `-${field}` ? "desc" : null
-
-  const handleToggle = () => {
-    if (sortDirection === "asc") {
-      onSort?.(`-${field}`)
-    } else {
-      onSort?.(field)
-    }
-  }
+  const direction = currentOrderBy === field ? "asc" : currentOrderBy === `-${field}` ? "desc" : null
+  const Icon = direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ChevronsUpDown
 
   return (
-    <button
+    <Button
       type="button"
-      className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-      onClick={handleToggle}
+      variant="ghost"
+      size="sm"
+      className="-ml-2.5 h-8 px-2.5 font-medium text-muted-foreground data-[active=true]:text-foreground"
+      data-active={direction !== null}
+      aria-sort={direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none"}
+      onClick={() => onSort(direction === "asc" ? `-${field}` : field)}
     >
       {label}
-      {sortDirection === "asc" && <ArrowUp className="h-4 w-4" />}
-      {sortDirection === "desc" && <ArrowDown className="h-4 w-4" />}
-      {sortDirection == null && <ArrowUpDown className="h-4 w-4 opacity-50" />}
-    </button>
+      <Icon className={direction ? "" : "opacity-50"} />
+    </Button>
   )
 }

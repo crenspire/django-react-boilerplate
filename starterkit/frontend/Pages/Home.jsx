@@ -1,5 +1,4 @@
-import React from "react"
-import { Link, usePage } from "@inertiajs/react"
+import { Head, Link, usePage } from "@inertiajs/react"
 import { Button } from "@/Components/ui/button"
 import {
   Zap,
@@ -12,6 +11,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react"
+import { useRoute } from "@/composables/useRoute"
 import { useTheme } from "@/composables/useTheme"
 
 const FEATURES = [
@@ -52,14 +52,17 @@ const FEATURES = [
 export default function Home() {
   const { theme, toggle: toggleTheme } = useTheme()
   const page = usePage()
-  const isSignedIn = !!page.props?.auth?.user
+  const route = useRoute()
+  const isSignedIn = !!page.props.auth?.user
+  const adminHref = isSignedIn ? route("admin_dashboard") : route("login")
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Head title="Home" />
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl shadow-sm shadow-black/5">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
           <Link
-            href="/"
+            href={route("home")}
             className="flex items-center font-semibold text-foreground tracking-tight hover:opacity-90 transition-opacity"
           >
             <span className="text-xl bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent font-bold">
@@ -77,27 +80,16 @@ export default function Home() {
               {theme === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           
-            {isSignedIn ? (
-              <Link href="/admin/">
-                <Button
-                  size="sm"
-                  className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-md shadow-violet-500/25"
-                >
-                  Admin
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+            <Button
+              size="sm"
+              asChild
+              className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-md shadow-violet-500/25"
+            >
+              <Link href={adminHref}>
+                {isSignedIn ? "Admin" : "Get started"}
+                <ArrowRight className="h-4 w-4" />
               </Link>
-            ) : (
-              <Link href="/admin/login/">
-                <Button
-                  size="sm"
-                  className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-md shadow-violet-500/25"
-                >
-                  Get started
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            )}
+            </Button>
           </nav>
         </div>
       </header>
@@ -128,30 +120,27 @@ export default function Home() {
             routing and auth—no separate SPA or API layer.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-            <Link href={isSignedIn ? "/admin/" : "/admin/login/"}>
-              <Button
-                size="lg"
-                className="gap-2 h-12 px-8 text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
+            <Button
+              size="lg"
+              asChild
+              className="gap-2 h-12 px-8 text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <Link href={adminHref}>
                 {isSignedIn ? "Open admin" : "Get started"}
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <a
-              href="https://github.com/crenspire/django-vue-boilerplate"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex"
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              asChild
+              className="gap-2 h-12 px-8 text-base border-2 hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-foreground transition-all"
             >
-              <Button
-                variant="outline"
-                size="lg"
-                className="gap-2 h-12 px-8 text-base border-2 hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-foreground transition-all"
-              >
+              <a href="https://github.com/crenspire/django-react-boilerplate" target="_blank" rel="noopener noreferrer">
                 <Github className="h-5 w-5" />
                 View on GitHub
-              </Button>
-            </a>
+              </a>
+            </Button>
           </div>
         </div>
       </section>
@@ -159,7 +148,7 @@ export default function Home() {
       <section className="relative border-t border-border bg-gradient-to-b from-muted/50 to-muted/30 dark:from-muted/30 dark:to-muted/10 py-20 md:py-28">
         <div className="container max-w-5xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-foreground tracking-tight mb-3">
-            What's included
+            What&apos;s included
           </h2>
           <p className="text-center text-muted-foreground mb-14 max-w-xl mx-auto text-lg">
             Everything you need to ship a Django-backed app with a polished React frontend.
@@ -210,19 +199,19 @@ export default function Home() {
           </p>
           <nav className="flex items-center gap-8">
             <Link
-              href="/"
+              href={route("home")}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors hover:underline underline-offset-4"
             >
               Home
             </Link>
             <Link
-              href="/admin/login/"
+              href={adminHref}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors hover:underline underline-offset-4"
             >
               Admin
             </Link>
             <a
-              href="https://github.com/crenspire/django-vue-boilerplate"
+              href="https://github.com/crenspire/django-react-boilerplate"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 hover:underline underline-offset-4"

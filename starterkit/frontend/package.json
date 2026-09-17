@@ -1,19 +1,20 @@
 {
-  "name": "frontend",
+  "name": "django-inertia-react-frontend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "React + Inertia.js frontend for the Django starter kit",
+  "type": "module",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint .",
+    "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@inertiajs/react": "^2.0.0",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@inertiajs/react": "^2.3.17",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -26,17 +27,25 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "^0.563.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^3.4.0",
-    "vite": "^7.3.1"
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.24",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "vite": "^7.3.1",
+    "vitest": "^5.0.1"
   }
 }

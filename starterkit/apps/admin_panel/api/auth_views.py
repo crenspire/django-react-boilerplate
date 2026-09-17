@@ -1,73 +1,39 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest
+from django.shortcuts import redirect
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods, require_POST
 from inertia import render
 
-from apps.admin_panel.api.request_utils import get_request_data
+from apps.admin_panel.api.request_utils import client_ip, get_request_data, parse_str
 from apps.admin_panel.dto.auth import LoginInputDTO
-from apps.admin_panel.services.auth import login_service, logout_service
+from apps.admin_panel.services.auth import get_login_page, login_user, logout_user
 
 
+@require_http_methods(["GET", "POST"])
 def login_view(request: HttpRequest):
-    """
-    Inertia-powered login view that mirrors Django admin login behavior.
-    """
+    if request.method == "GET":
+        next_url = request.GET.get("next", "")
+        return render(request, "Auth/Login", get_login_page(next_url=next_url))
 
-    data = get_request_data(request) if request.method == "POST" else {}
-    next_url = (
-        request.GET.get("next")
-        or (data.get("next") if isinstance(data.get("next"), str) else None)
-        or reverse("admin_dashboard")
+    data = get_request_data(request)
+    dto = LoginInputDTO(
+        username=parse_str(data.get("username")),
+        password=parse_str(data.get("password")),
+        next_url=parse_str(data.get("next")) or request.GET.get("next", ""),
+        default_redirect_url=reverse("admin_dashboard"),
+        client_ip=client_ip(request),
     )
-
-    if request.method == "POST":
-        dto = LoginInputDTO(
-            username=data.get("username", "") or "",
-            password=data.get("password", "") or "",
-            next_url=next_url,
-        )
-
-        result = login_service(dto, request)
-
-        if result.success and result.redirect_url:
-            return HttpResponseRedirect(result.redirect_url)
-
-        # Re-render the login page with errors and the submitted username.
-        return render(
-            request,
-            "Auth/Login",
-            {
-                "form": {
-                    "username": dto.username,
-                    # For security reasons, do not echo the password back to the client.
-                    "password": "",
-                    "next": next_url,
-                },
-                "errors": result.errors,
-            },
-        )
-
-    # GET request: render empty login form.
-    return render(
-        request,
-        "Auth/Login",
-        {
-            "form": {
-                "username": "",
-                "password": "",
-                "next": next_url,
-            },
-            "errors": {},
-        },
-    )
+    result = login_user(request, dto)
+    if result.success:
+        return redirect(result.redirect_url)
+    return render(request, "Auth/Login", result.page_props)
 
 
+@require_POST
 @login_required
 def logout_view(request: HttpRequest):
-    if request.method != "POST":
-        # Mirror Django admin: logout is POST-only; redirect to admin index if GET
-        return HttpResponseRedirect(reverse("admin_dashboard"))
-
-    redirect_url = logout_service(request)
-    return HttpResponseRedirect(redirect_url)
-
+    logout_user(request)
+    messages.info(request, "You have been signed out.")
+    return redirect("login")

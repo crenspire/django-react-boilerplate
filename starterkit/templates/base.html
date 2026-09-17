@@ -1,24 +1,21 @@
-{% load static %}
+{% load static vite %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="csrf-token" content="{{ csrf_token }}" />
   <link rel="icon" type="image/svg+xml" href="{% static 'icon.svg' %}" />
-  <title>Admin</title>
+  <title inertia>Django Inertia Starter</title>
+  <script>
+    // Apply the saved theme before first paint to avoid a light/dark flash.
+    try {
+      if (localStorage.getItem("admin-theme") === "dark") document.documentElement.classList.add("dark")
+    } catch (e) {}
+  </script>
+  {% vite_assets %}
   {% block inertia_head %}{% endblock inertia_head %}
 </head>
 <body>
   {% block inertia %}{% endblock inertia %}
-  <!-- React Fast Refresh preamble (required when HTML is not served by Vite). Omit in production when using built assets. -->
-  <script type="module">
-    import { injectIntoGlobalHook } from "http://localhost:5173/@react-refresh";
-    injectIntoGlobalHook(window);
-    window.$RefreshReg$ = () => {};
-    window.$RefreshSig$ = () => (type) => type;
-  </script>
-  <!-- Vite dev server entry for React/Inertia app -->
-  <script type="module" src="http://localhost:5173/app.jsx"></script>
 </body>
 </html>

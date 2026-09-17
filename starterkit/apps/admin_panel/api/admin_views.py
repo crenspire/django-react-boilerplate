@@ -1,19 +1,12 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest
+from django.views.decorators.http import require_GET
 from inertia import render
 
-from apps.admin_panel.domain.policies import can_access_admin
-from apps.admin_panel.selectors.auth import get_dashboard_stats
-from main.middleware import get_auth_props
+from apps.admin_panel.services.dashboard import get_dashboard_page
 
 
+@require_GET
 @login_required
-@user_passes_test(can_access_admin)
 def dashboard(request: HttpRequest):
-    """
-    Admin dashboard page with summary statistics.
-    """
-    return render(request, "Admin/Dashboard", {
-        "auth": get_auth_props(request),
-        "stats": get_dashboard_stats(),
-    })
+    return render(request, "Admin/Dashboard", get_dashboard_page(actor=request.user))

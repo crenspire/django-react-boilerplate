@@ -1,29 +1,22 @@
-from typing import Optional
-
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
+from django.db.models import Count, Q
+
+User = get_user_model()
 
 
-UserModel = get_user_model()
+def user_counts() -> dict[str, int]:
+    return User.objects.aggregate(
+        total=Count("pk"),
+        active=Count("pk", filter=Q(is_active=True)),
+        staff=Count("pk", filter=Q(is_staff=True)),
+        superusers=Count("pk", filter=Q(is_superuser=True)),
+    )
 
 
-def get_user_by_username(username: str) -> Optional[UserModel]:
-    """
-    Selector for looking up a user by username.
-
-    No business logic, just a thin wrapper around the ORM.
-    """
-
-    if not username:
-        return None
-
-    return UserModel.objects.filter(username=username).first()
+def count_groups() -> int:
+    return Group.objects.count()
 
 
-def get_dashboard_stats() -> dict:
-    """Return aggregate counts for the admin dashboard."""
-    return {
-        "user_count": UserModel.objects.count(),
-        "group_count": Group.objects.count(),
-    }
-
+def count_group_permission_assignments() -> int:
+    return Permission.objects.filter(group__isnull=False).count()

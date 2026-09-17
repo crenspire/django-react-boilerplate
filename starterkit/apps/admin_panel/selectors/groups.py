@@ -1,79 +1,43 @@
-from django.contrib.auth.models import Group
+from collections.abc import Iterable
+
+from django.contrib.auth.models import Group, Permission
 from django.db.models import Count, QuerySet
 
-from apps.admin_panel.dto.groups import GroupDetailDTO, GroupListItemDTO
 
-
-def get_groups_queryset(
-    *,
-    search: str | None = None,
-    order_by: str = "name",
-) -> QuerySet:
+def group_list(*, search: str = "", order_by: str = "name") -> QuerySet:
+    # distinct=True is required: two COUNTs over separate joins otherwise
+    # multiply each other (3 users x 4 permissions would report 12 and 12).
     qs = Group.objects.annotate(
-        user_count=Count("user"),
-        permission_count=Count("permissions"),
-    ).order_by(order_by)
-    if search and search.strip():
-        term = search.strip()
+        user_count=Count("user", distinct=True),
+        permission_count=Count("permissions", distinct=True),
+    ).order_by(order_by, "pk")
+    term = search.strip()
+    if term:
         qs = qs.filter(name__icontains=term)
     return qs
 
 
-def get_group_list_page(
-    *,
-    search: str | None = None,
-    order_by: str = "name",
-    page: int = 1,
-    page_size: int = 25,
-) -> tuple[list[GroupListItemDTO], int]:
-    qs = get_groups_queryset(search=search, order_by=order_by)
-    total = qs.count()
-    start = (page - 1) * page_size
-    rows = qs[start : start + page_size]
-    items = [
-        GroupListItemDTO(
-            id=g.id,
-            name=g.name,
-            user_count=g.user_count,
-            permission_count=g.permission_count,
-        )
-        for g in rows
-    ]
-    return items, total
-
-
-def get_group_by_id(group_id: int) -> Group | None:
+def group_get(group_id: int) -> Group | None:
     return Group.objects.filter(pk=group_id).first()
 
 
-def get_group_detail_dto(group_id: int) -> GroupDetailDTO | None:
-    group = get_group_by_id(group_id)
-    if not group:
-        return None
-    perms = list(group.permissions.all().order_by("content_type__app_label", "codename"))
-    users = list(group.user_set.all().order_by("username"))
-    return GroupDetailDTO(
-        id=group.id,
-        name=group.name,
-        permission_ids=[p.id for p in perms],
-        permission_codenames=[f"{p.content_type.app_label}.{p.codename}" for p in perms],
-        user_ids=[u.id for u in users],
-        user_usernames=[u.username for u in users],
+def group_choices() -> QuerySet:
+    return Group.objects.order_by("name")
+
+
+def groups_by_ids(group_ids: Iterable[int]) -> QuerySet:
+    return Group.objects.filter(pk__in=list(group_ids))
+
+
+def group_permission_ids(group: Group) -> list[int]:
+    return list(group.permissions.values_list("pk", flat=True))
+
+
+def permission_choices() -> QuerySet:
+    return Permission.objects.select_related("content_type").order_by(
+        "content_type__app_label", "codename"
     )
 
 
-def get_groups_choices() -> list[dict]:
-    """Return list of {id, name} for all groups for use in user forms."""
-    return [{"id": g.id, "name": g.name} for g in Group.objects.order_by("name")]
-
-
-def get_all_permissions_choices() -> list[tuple[int, str]]:
-    """Return (id, label) for all permissions for use in forms."""
-    from django.contrib.auth.models import Permission
-
-    perms = (
-        Permission.objects.select_related("content_type")
-        .order_by("content_type__app_label", "codename")
-        .all()
-    )
-    return [(p.id, f"{p.content_type.app_label}.{p.codename}") for p in perms]
+def permissions_by_ids(permission_ids: Iterable[int]) -> QuerySet:
+    return Permission.objects.filter(pk__in=list(permission_ids))

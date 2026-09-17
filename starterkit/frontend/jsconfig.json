@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "jsx": "react-jsx",
     "paths": {
       "@/*": ["./*"]
     }
   },
   "include": [
     "**/*.js",
-    "**/*.vue"
+    "**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

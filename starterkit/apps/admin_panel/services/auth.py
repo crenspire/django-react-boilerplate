@@ -1,137 +1,108 @@
-from typing import Dict, List
+import hashlib
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.http import HttpRequest
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from apps.admin_panel.domain.policies import is_active_staff
+from apps.admin_panel.domain.policies import can_access_admin
 from apps.admin_panel.dto.auth import LoginInputDTO, LoginResultDTO
-from apps.admin_panel.selectors.auth import get_user_by_username
+from apps.admin_panel.infrastructure import attempt_counter
+
+INVALID_CREDENTIALS_ERROR = (
+    "Please enter the correct username and password for a staff account. "
+    "Note that both fields may be case-sensitive."
+)
+TOO_MANY_ATTEMPTS_ERROR = "Too many failed login attempts. Please try again later."
+
+# Login and logout are the only services that take the request: Django's
+# session-based login/logout functions need it.
 
 
-def _default_admin_redirect() -> str:
+def get_login_page(*, next_url: str) -> dict:
+    return _page_props(username="", next_url=next_url, errors={})
+
+
+def login_user(request: HttpRequest, data: LoginInputDTO) -> LoginResultDTO:
     """
-    Default redirect after login when no safe `next` param is provided.
-    """
+    Log in an active staff user, mirroring Django admin.
 
-    # Keep in sync with the named URL for the Inertia admin dashboard.
-    return "/admin/"
-
-
-def _clean_next_url(request: HttpRequest, next_url: str | None) -> str:
-    """
-    Apply Django-style host checking to the `next` URL.
-    """
-
-    candidate = next_url or _default_admin_redirect()
-
-    if not url_has_allowed_host_and_scheme(
-        url=candidate,
-        allowed_hosts={request.get_host()},
-        require_https=request.is_secure(),
-    ):
-        return _default_admin_redirect()
-
-    return candidate
-
-
-def login_service(dto: LoginInputDTO, request: HttpRequest) -> LoginResultDTO:
-    """
-    Perform login using Django's auth stack and mirror Django admin behavior:
-
-    - Use `authenticate` with the provided credentials.
-    - Require the user to be active and `is_staff`.
-    - Respect a validated `next` parameter for post-login redirect.
+    The error message is identical for unknown users, wrong passwords, inactive
+    accounts and non-staff accounts so the form cannot be used to probe accounts.
+    Repeated failures from one client are throttled.
     """
 
-    errors: Dict[str, List[str]] = {}
+    username = data.username.strip()
+    user_key, client_key = _attempt_keys(username, data.client_ip)
 
-    username = (dto.username or "").strip()
-    password = dto.password or ""
+    if _is_throttled(user_key, client_key):
+        return _failure(username, data, {"non_field_errors": [TOO_MANY_ATTEMPTS_ERROR]})
 
-    # Empty field validation (similar to Django admin's form).
+    errors: dict[str, list[str]] = {}
     if not username:
-        errors.setdefault("username", []).append("This field is required.")
-    if not password:
-        errors.setdefault("password", []).append("This field is required.")
-
+        errors["username"] = ["This field is required."]
+    if not data.password:
+        errors["password"] = ["This field is required."]
     if errors:
-        return LoginResultDTO(
-            success=False,
-            redirect_url=None,
-            user_id=None,
-            username=None,
-            is_staff=False,
-            is_superuser=False,
-            errors=errors,
-        )
+        return _failure(username, data, errors)
 
-    user = authenticate(request, username=username, password=password)
+    user = authenticate(request, username=username, password=data.password)
+    if user is None or not can_access_admin(user):
+        window = settings.ADMIN_LOGIN_LOCKOUT_SECONDS
+        attempt_counter.increment(user_key, window_seconds=window)
+        attempt_counter.increment(client_key, window_seconds=window)
+        return _failure(username, data, {"non_field_errors": [INVALID_CREDENTIALS_ERROR]})
 
-    # If authentication failed, we can still distinguish between inactive and non-staff users.
-    if user is None:
-        existing_user = get_user_by_username(username)
-        non_field_errors: list[str] = []
-
-        if existing_user is not None and not existing_user.is_active:
-            non_field_errors.append("This account is inactive.")
-        else:
-            non_field_errors.append(
-                "Please enter the correct username and password for a staff account. "
-                "Note that both fields may be case-sensitive."
-            )
-
-        errors["non_field_errors"] = non_field_errors
-
-        return LoginResultDTO(
-            success=False,
-            redirect_url=None,
-            user_id=None,
-            username=None,
-            is_staff=False,
-            is_superuser=False,
-            errors=errors,
-        )
-
-    # Mirror Django admin: require active staff users to log into the admin.
-    if not is_active_staff(user):
-        errors["non_field_errors"] = [
-            "Please enter the correct username and password for a staff account. "
-            "Note that both fields may be case-sensitive."
-        ]
-        return LoginResultDTO(
-            success=False,
-            redirect_url=None,
-            user_id=None,
-            username=None,
-            is_staff=False,
-            is_superuser=False,
-            errors=errors,
-        )
-
-    # Successful login.
+    attempt_counter.reset(user_key)
     django_login(request, user)
-
-    redirect_url = _clean_next_url(request, dto.next_url)
 
     return LoginResultDTO(
         success=True,
-        redirect_url=redirect_url,
-        user_id=user.pk,
-        username=user.get_username(),
-        is_staff=user.is_staff,
-        is_superuser=user.is_superuser,
+        redirect_url=_safe_redirect_url(request, data.next_url, data.default_redirect_url),
         errors={},
+        page_props=None,
     )
 
 
-def logout_service(request: HttpRequest) -> str:
-    """
-    Log the user out and return the appropriate redirect URL.
-    """
-
+def logout_user(request: HttpRequest) -> None:
     django_logout(request)
 
-    # After logout, send users back to the login page with a default `next` to the admin.
-    return "/admin/login/?next=/admin/"
 
+def _attempt_keys(username: str, client_ip: str) -> tuple[str, str]:
+    # Hash user-supplied values so keys are always valid for any cache backend.
+    user_digest = hashlib.sha256(f"{username.lower()}|{client_ip}".encode()).hexdigest()
+    client_digest = hashlib.sha256(client_ip.encode()).hexdigest()
+    return f"admin-login:user:{user_digest}", f"admin-login:client:{client_digest}"
+
+
+def _is_throttled(user_key: str, client_key: str) -> bool:
+    max_attempts = settings.ADMIN_LOGIN_MAX_ATTEMPTS
+    # A single client may try a few usernames before being blocked outright.
+    return (
+        attempt_counter.get_count(user_key) >= max_attempts
+        or attempt_counter.get_count(client_key) >= max_attempts * 4
+    )
+
+
+def _safe_redirect_url(request: HttpRequest, next_url: str, default_url: str) -> str:
+    if next_url and url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return default_url
+
+
+def _failure(username: str, data: LoginInputDTO, errors: dict) -> LoginResultDTO:
+    return LoginResultDTO(
+        success=False,
+        redirect_url=None,
+        errors=errors,
+        page_props=_page_props(username=username, next_url=data.next_url, errors=errors),
+    )
+
+
+def _page_props(*, username: str, next_url: str, errors: dict) -> dict:
+    # The password is never echoed back to the client.
+    return {"form": {"username": username, "password": "", "next": next_url}, "errors": errors}
