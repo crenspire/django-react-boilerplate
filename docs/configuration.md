@@ -28,7 +28,21 @@ All settings come from environment variables read in [`main/settings.py`](../sta
 | `ADMIN_LOGIN_MAX_ATTEMPTS` | `5` | Failures allowed per username + client before blocking (a client is blocked after 4× this across usernames). |
 | `ADMIN_LOGIN_LOCKOUT_SECONDS` | `900` | Window for counting failures. |
 
-Throttling uses Django's cache. The default in-memory cache is per process — configure a shared cache (Redis, Memcached or the database cache) when running several workers.
+Throttling uses Django's cache. The default in-memory cache is per process — set `DJANGO_CACHE_URL` (below) when running several web processes.
+
+## Redis, cache and Celery
+
+| Variable | Default | Notes |
+|---|---|---|
+| `REDIS_URL` | `redis://localhost:6379/0` | Used for the Celery broker and results unless overridden below. |
+| `CELERY_BROKER_URL` | `REDIS_URL` | Where tasks are queued. |
+| `CELERY_RESULT_BACKEND` | `REDIS_URL` | Where task results are stored (kept for 24 hours). |
+| `DJANGO_CACHE_URL` | – (in-memory cache) | Set to a Redis URL, e.g. `redis://localhost:6379/1`, for a cache shared by all processes. |
+| `CELERY_TASK_ALWAYS_EAGER` | `false` | Run tasks inline in the calling process — no Redis or worker needed. Development only. |
+| `CELERY_TASK_TIME_LIMIT` | `300` | Seconds before a task is killed. |
+| `CELERY_TASK_SOFT_TIME_LIMIT` | `240` | Seconds before `SoftTimeLimitExceeded` is raised inside the task. |
+
+Periodic schedules are configured in `CELERY_BEAT_SCHEDULE` in `settings.py` and editable afterwards in `/django-admin/`. See [Background tasks](background-tasks.md).
 
 ## Frontend assets
 

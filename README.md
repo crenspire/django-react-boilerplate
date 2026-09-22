@@ -16,6 +16,7 @@ A full-stack starter for building web apps with **Django** on the backend and **
 - **User & group management** — search, sorting, pagination, validation, safe deletes
 - **Secure by default** — Django model permissions, superuser-only privilege changes, self-lockout protection, password validation, login throttling, CSRF
 - **Clean architecture** — views → services → selectors / policies, with DTOs at the boundaries ([details](docs/architecture.md))
+- **Celery + Redis** for background jobs, with **Celery Beat** schedules editable in Django admin
 - **Vite 7** dev server with HMR and manifest-based production builds
 - **Tested** — 100+ Django tests, ESLint and Vitest on the frontend
 
@@ -58,6 +59,8 @@ npm run dev
 
 Open **http://127.0.0.1:8000** for the landing page and **http://127.0.0.1:8000/admin/** for the admin console.
 
+Background jobs need Redis, a Celery worker and Beat. Start Redis with `docker compose up -d`, then run everything at once with `uvx honcho -f Procfile.dev start` (see [Background tasks](docs/background-tasks.md)).
+
 The full walkthrough is in [Getting started](docs/getting-started.md).
 
 ## Documentation
@@ -68,6 +71,7 @@ The full walkthrough is in [Getting started](docs/getting-started.md).
 | [Architecture](docs/architecture.md) | Layers and rules, request lifecycle, adding a feature step by step |
 | [Permissions](docs/permissions.md) | Who can do what in the admin and how to change it |
 | [Frontend](docs/frontend.md) | Admin shell, pages, shadcn/ui components, routes, theming |
+| [Background tasks](docs/background-tasks.md) | Celery workers, Beat schedules, Redis |
 | [Configuration](docs/configuration.md) | Environment variables |
 | [Deployment](docs/deployment.md) | Production build, static files, security checklist |
 | [Testing](docs/testing.md) | Running and writing backend and frontend tests |
@@ -76,7 +80,8 @@ The full walkthrough is in [Getting started](docs/getting-started.md).
 
 ```
 starterkit/
-├── main/                     # Django project: settings, urls, middleware, route map, {% vite_assets %}
+├── main/                     # Django project: settings, urls, middleware, Celery app, route map
+├── apps/system/              # Maintenance services and Celery tasks
 ├── apps/admin_panel/         # Admin console
 │   ├── api/                  #   views: parse request → call one service → respond
 │   ├── services/             #   business logic and page props

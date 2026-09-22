@@ -7,12 +7,14 @@ Django is the single source of truth: it owns routing, authentication, permissio
 Dependencies flow in one direction:
 
 ```
-api (views) ──► services ──► selectors / domain (policies) ──► infrastructure
+api (views)    ─┐
+tasks (Celery) ─┴─► services ──► selectors / domain (policies) ──► infrastructure
 ```
 
 | Layer | Location | Responsibility | Must not |
 |---|---|---|---|
 | **Views** | `apps/*/api/` | Parse the request into a DTO, call **one** service, return an Inertia response or redirect | Query the ORM, check permissions, contain business rules |
+| **Tasks** | `apps/*/tasks.py` | Celery entry points: call **one** service with IDs/primitive arguments | Contain business logic or be imported by services |
 | **Services** | `apps/*/services/` | Business logic, permission checks, transactions, building page props | Return `HttpResponse` objects |
 | **Selectors** | `apps/*/selectors/` | Every ORM query; return QuerySets or model instances | Contain business rules |
 | **Domain** | `apps/*/domain/` | Permission policies (pure functions of users) | Touch cache, HTTP or external services |

@@ -1,6 +1,6 @@
 # Deployment
 
-The app deploys as a single Django service. There is no separate frontend server in production: Vite builds static files that Django (or your web server) serves.
+The app deploys as a Django web service plus Celery worker and beat processes, all from the same code, with Redis alongside. There is no separate frontend server in production: Vite builds static files that Django (or your web server) serves.
 
 ## 1. Build the frontend
 
@@ -44,6 +44,13 @@ uv add gunicorn
 cd starterkit && uv run gunicorn main.wsgi:application --bind 0.0.0.0:8000 --workers 3
 ```
 
+Run the background processes alongside the web server (see [Background tasks](background-tasks.md)):
+
+```bash
+cd starterkit && uv run celery -A main worker -l info --concurrency 4
+cd starterkit && uv run celery -A main beat -l info      # exactly one instance
+```
+
 Serve `STATIC_ROOT` at `/static/` with one of:
 
 - your reverse proxy (nginx, Caddy) pointing at `starterkit/staticfiles/`
@@ -56,7 +63,8 @@ Serve `STATIC_ROOT` at `/static/` with one of:
 - [ ] `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS` set
 - [ ] HTTPS enabled; `DJANGO_BEHIND_TLS_PROXY=true` if TLS ends at a proxy
 - [ ] `DJANGO_SECURE_HSTS_SECONDS` raised once HTTPS is stable
-- [ ] A shared cache configured so login throttling works across workers
+- [ ] Redis provisioned; `REDIS_URL` set for Celery and `DJANGO_CACHE_URL` for a shared cache
+- [ ] Celery worker(s) and exactly **one** beat process running
 - [ ] A production database (PostgreSQL recommended) and backups
 - [ ] `npm run build` and `collectstatic` run on every deploy
 - [ ] `manage.py check --deploy` passes

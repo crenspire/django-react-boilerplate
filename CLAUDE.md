@@ -143,6 +143,15 @@ EXTERNAL SYSTEMS
     - MUST be accessed only via adapters
     - MUST NOT be imported in views or models
 
+24a. Celery tasks (apps/*/tasks.py) are entry points, like views:
+    - Call exactly ONE service; no business logic
+    - Have an explicit name ("<app>.<action>")
+    - Take IDs / primitives as arguments, never model instances
+    - Are idempotent (acks_late: a task may run twice)
+    - Services MUST NOT import task modules; enqueue through an
+      infrastructure adapter, after commit (transaction.on_commit)
+    - Periodic schedules live in CELERY_BEAT_SCHEDULE (settings.py)
+
 =====================================
 TESTING & QUALITY
 =====================================

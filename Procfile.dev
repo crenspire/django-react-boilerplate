@@ -1,0 +1,4 @@
+web: cd starterkit && uv run python manage.py runserver
+vite: cd starterkit/frontend && npm run dev
+worker: cd starterkit && uv run celery -A main worker -l info
+beat: cd starterkit && uv run celery -A main beat -l info

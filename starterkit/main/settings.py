@@ -9,6 +9,7 @@ README.md for the variables production must set.
 import os
 from pathlib import Path
 
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,7 +58,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'inertia',
+    'django_celery_beat',
     'apps.admin_panel',
+    'apps.system',
 ]
 
 MIDDLEWARE = [
@@ -151,6 +154,51 @@ if env_bool("DJANGO_BEHIND_TLS_PROXY", False):
 # frontend/app.jsx reads the cookie on every Inertia request. Avoid renaming the
 # cookie to "XSRF-TOKEN": Laravel and Angular apps on the same host use that name
 # and overwrite it with values Django rejects.
+
+
+# Cache
+#
+# In-memory by default. Point DJANGO_CACHE_URL at Redis (e.g. redis://localhost:6379/1)
+# so cached data — including login throttling counts — is shared by every worker.
+
+DJANGO_CACHE_URL = os.environ.get("DJANGO_CACHE_URL", "")
+if DJANGO_CACHE_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": DJANGO_CACHE_URL,
+        }
+    }
+else:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+
+# Celery (see main/celery.py and docs/background-tasks.md)
+
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", REDIS_URL)
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
+CELERY_RESULT_EXPIRES = 60 * 60 * 24
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_SOFT_TIME_LIMIT = env_int("CELERY_TASK_SOFT_TIME_LIMIT", 4 * 60)
+CELERY_TASK_TIME_LIMIT = env_int("CELERY_TASK_TIME_LIMIT", 5 * 60)
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# Run tasks inline, without Redis or a worker (handy for quick local hacking).
+CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# Celery Beat keeps schedules in the database (django-celery-beat), editable at
+# /django-admin/. Entries below are created or updated there each time beat starts.
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BEAT_SCHEDULE = {
+    "clear-expired-sessions": {
+        "task": "system.clear_expired_sessions",
+        "schedule": crontab(hour=3, minute=0),
+    },
+}
 
 
 # Admin login throttling (see apps/admin_panel/infrastructure/attempt_counter.py)

@@ -15,7 +15,7 @@ uv run python starterkit/manage.py createsuperuser
 uv run python starterkit/manage.py runserver
 ```
 
-`uv run` creates the virtual environment and installs Django and inertia-django on first use. The development database is SQLite at `starterkit/db.sqlite3`.
+`uv run` creates the virtual environment and installs the Python dependencies on first use. The development database is SQLite at `starterkit/db.sqlite3`.
 
 ## 2. Run the frontend dev server
 
@@ -36,7 +36,20 @@ Django renders the HTML and loads JavaScript from the Vite dev server (`http://l
 > VITE_DEV_SERVER_URL=http://localhost:5180 uv run python starterkit/manage.py runserver
 > ```
 
-## 3. Open the app
+## 3. Background tasks (optional)
+
+Scheduled jobs and anything queued with Celery need Redis, a worker and the beat scheduler:
+
+```bash
+docker compose up -d                           # Redis on localhost:6379
+cd starterkit
+uv run celery -A main worker -l info           # third terminal
+uv run celery -A main beat -l info             # fourth terminal
+```
+
+Or run web, Vite, worker and beat together from the repository root with `uvx honcho -f Procfile.dev start`. The site works without them; only background jobs wait. See [Background tasks](background-tasks.md).
+
+## 4. Open the app
 
 | URL | What |
 |---|---|
@@ -62,6 +75,8 @@ Sign in with the superuser you created. Staff users need model permissions (or g
 .
 ├── docs/                         # This documentation
 ├── pyproject.toml / uv.lock      # Python dependencies
+├── compose.yaml                  # Redis for local development
+├── Procfile.dev                  # web + vite + worker + beat via honcho
 └── starterkit/
     ├── manage.py
     ├── main/                     # Django project
@@ -69,8 +84,10 @@ Sign in with the superuser you created. Staff users need model permissions (or g
     │   ├── urls.py               #   all URL routes
     │   ├── routes.py             #   route names exposed to React
     │   ├── middleware.py         #   shared Inertia props (auth, flash, routes, nav)
+    │   ├── celery.py             #   Celery app
     │   └── templatetags/vite.py  #   {% vite_assets %}
     ├── apps/admin_panel/         # The admin console (see Architecture)
+    ├── apps/system/              # Maintenance services and Celery tasks
     ├── templates/base.html       # Inertia root template
     ├── static_assets/            # Static files served at /static/
     └── frontend/                 # React app

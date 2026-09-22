@@ -15,6 +15,7 @@ Tests live next to the code they cover:
 | `apps/admin_panel/tests/test_selectors.py` | Queries, counts, search, ordering |
 | `apps/admin_panel/tests/test_*_services.py` | Business rules, validation, privilege checks, transactions |
 | `apps/admin_panel/tests/test_views.py` | HTTP behaviour: redirects, 403/404/405, CSRF, flash messages, shared props |
+| `apps/system/tests/` | Maintenance services, Celery tasks, beat schedule sanity |
 | `main/tests/` | Route map and the `{% vite_assets %}` tag |
 
 `apps/admin_panel/tests/factories.py` has helpers for common users:
