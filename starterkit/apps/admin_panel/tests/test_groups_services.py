@@ -5,7 +5,7 @@ from django.http import Http404
 from django.test import TestCase
 from unittest import mock
 
-from apps.admin_panel.dto.common import ListQueryDTO
+from shared.dto import ListQueryDTO
 from apps.admin_panel.dto.groups import GroupFormInputDTO
 from apps.admin_panel.services import groups as group_services
 from apps.admin_panel.tests.factories import GROUP_PERMS, make_staff, make_superuser, make_user

@@ -7,11 +7,12 @@ from django.db import IntegrityError, transaction
 from django.http import Http404
 
 from apps.admin_panel.domain import policies
-from apps.admin_panel.dto.common import DeleteResultDTO, ListQueryDTO
+from shared.dto import DeleteResultDTO, ListQueryDTO
 from apps.admin_panel.dto.users import UserFormInputDTO, UserFormResultDTO, UserListItemDTO
 from apps.admin_panel.selectors import groups as group_selectors
 from apps.admin_panel.selectors import users as user_selectors
-from apps.admin_panel.services.common import (
+from apps.users.selectors.roles import Role, roles_for_users
+from shared.services import (
     ensure_allowed,
     merge_errors,
     paginate,
@@ -43,8 +44,10 @@ def get_user_list_page(*, actor: User, query: ListQueryDTO) -> dict:
     queryset = user_selectors.user_list(search=query.search, order_by=order_by)
     page, pagination = paginate(queryset, page=query.page, page_size=query.page_size)
 
+    users = list(page)
+    roles = roles_for_users(users)
     return {
-        "users": [asdict(_list_item(actor, user)) for user in page],
+        "users": [asdict(_list_item(actor, user, roles[user.pk])) for user in users],
         "pagination": pagination,
         "filters": {"search": query.search, "order_by": order_by},
         "can": {"add": policies.can_add_users(actor)},
@@ -261,7 +264,7 @@ def _password_errors(user: User, password: str, *, required: bool) -> dict[str, 
     return {}
 
 
-def _list_item(actor: User, user: User) -> UserListItemDTO:
+def _list_item(actor: User, user: User, role: Role | None) -> UserListItemDTO:
     return UserListItemDTO(
         id=user.pk,
         username=user.username,
@@ -271,8 +274,10 @@ def _list_item(actor: User, user: User) -> UserListItemDTO:
         is_staff=user.is_staff,
         is_superuser=user.is_superuser,
         is_active=user.is_active,
+        role=role.label if role else "",
         can_edit=policies.can_change_user(actor, user),
         can_delete=policies.can_delete_user(actor, user),
+        can_assign_role=policies.can_assign_role(actor, user),
     )
 
 

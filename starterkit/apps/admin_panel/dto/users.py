@@ -12,8 +12,10 @@ class UserListItemDTO:
     is_staff: bool
     is_superuser: bool
     is_active: bool
+    role: str
     can_edit: bool
     can_delete: bool
+    can_assign_role: bool
 
 
 @dataclass(frozen=True)

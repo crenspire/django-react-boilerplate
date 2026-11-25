@@ -2,7 +2,7 @@ import json
 
 from django.http import HttpRequest
 
-from apps.admin_panel.dto.common import ListQueryDTO
+from shared.dto import ListQueryDTO
 
 TRUE_VALUES = (True, 1, "1", "true", "on")
 

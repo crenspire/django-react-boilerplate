@@ -5,12 +5,12 @@ from django.contrib.auth import authenticate, login as django_login, logout as d
 from django.http import HttpRequest
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from apps.admin_panel.domain.policies import can_access_admin
+from apps.admin_panel.domain.policies import can_sign_in
 from apps.admin_panel.dto.auth import LoginInputDTO, LoginResultDTO
 from apps.admin_panel.infrastructure import attempt_counter
 
 INVALID_CREDENTIALS_ERROR = (
-    "Please enter the correct username and password for a staff account. "
+    "Please enter a correct username and password. "
     "Note that both fields may be case-sensitive."
 )
 TOO_MANY_ATTEMPTS_ERROR = "Too many failed login attempts. Please try again later."
@@ -25,10 +25,10 @@ def get_login_page(*, next_url: str) -> dict:
 
 def login_user(request: HttpRequest, data: LoginInputDTO) -> LoginResultDTO:
     """
-    Log in an active staff user, mirroring Django admin.
+    Log in any active user; what they may open is decided by each page's policy.
 
-    The error message is identical for unknown users, wrong passwords, inactive
-    accounts and non-staff accounts so the form cannot be used to probe accounts.
+    The error message is identical for unknown users, wrong passwords and inactive
+    accounts so the form cannot be used to probe accounts.
     Repeated failures from one client are throttled.
     """
 
@@ -47,7 +47,7 @@ def login_user(request: HttpRequest, data: LoginInputDTO) -> LoginResultDTO:
         return _failure(username, data, errors)
 
     user = authenticate(request, username=username, password=data.password)
-    if user is None or not can_access_admin(user):
+    if user is None or not can_sign_in(user):
         window = settings.ADMIN_LOGIN_LOCKOUT_SECONDS
         attempt_counter.increment(user_key, window_seconds=window)
         attempt_counter.increment(client_key, window_seconds=window)

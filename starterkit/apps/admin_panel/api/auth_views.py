@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 from inertia import render
 
-from apps.admin_panel.api.request_utils import client_ip, get_request_data, parse_str
+from shared.request_utils import client_ip, get_request_data, parse_str
 from apps.admin_panel.dto.auth import LoginInputDTO
 from apps.admin_panel.services.auth import get_login_page, login_user, logout_user
 
@@ -22,7 +22,7 @@ def login_view(request: HttpRequest):
         username=parse_str(data.get("username")),
         password=parse_str(data.get("password")),
         next_url=parse_str(data.get("next")) or request.GET.get("next", ""),
-        default_redirect_url=reverse("admin_dashboard"),
+        default_redirect_url=reverse("workspace"),
         client_ip=client_ip(request),
     )
     result = login_user(request, dto)

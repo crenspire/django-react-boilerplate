@@ -15,6 +15,10 @@ from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 UserLike = AbstractBaseUser | AnonymousUser
 
 
+def can_sign_in(user: UserLike) -> bool:
+    return bool(getattr(user, "is_authenticated", False) and getattr(user, "is_active", False))
+
+
 def can_access_admin(user: UserLike) -> bool:
     return bool(
         getattr(user, "is_authenticated", False)
@@ -69,6 +73,10 @@ def can_delete_user(actor: UserLike, target: UserLike) -> bool:
     if actor.pk == target.pk:
         return False
     return can_grant_privileges(actor) or not is_privileged_account(target)
+
+
+def can_assign_role(actor: UserLike, target: UserLike) -> bool:
+    return can_grant_privileges(actor) and not getattr(target, "is_superuser", False)
 
 
 # Groups

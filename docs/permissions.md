@@ -4,7 +4,11 @@ The admin console follows Django admin's model — staff status plus model permi
 
 ## Signing in
 
-A user can sign in to `/admin/` when they are **active** and **staff**. Every other account gets the same generic error, so the form cannot be used to discover which accounts exist or are inactive.
+Every **active** user can sign in and lands on `/workspace/`. Signing in grants nothing by itself: the admin console still requires **staff** status and answers 403 otherwise. Unknown users, wrong passwords and inactive accounts get the same generic error, so the form cannot be used to discover which accounts exist.
+
+## Application roles
+
+Every active user acts with exactly one role: **Client**, **Manager** or **Admin**. Roles are stored on `UserProfile`; accounts without a profile are clients, and superusers are always admins. Only superusers can change roles, from **Users → Change role**. Roles are independent of staff status and Django permissions, which only govern the admin console.
 
 Failed sign-ins are throttled per username + client IP and per client IP (`ADMIN_LOGIN_MAX_ATTEMPTS` failures within `ADMIN_LOGIN_LOCKOUT_SECONDS`). See [Configuration](configuration.md).
 

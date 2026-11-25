@@ -79,9 +79,9 @@ def can_view_permissions(user: UserLike) -> bool:
 ```python
 # apps/admin_panel/services/permissions.py
 from apps.admin_panel.domain import policies
-from apps.admin_panel.dto.common import ListQueryDTO
+from shared.dto import ListQueryDTO
 from apps.admin_panel.selectors.permissions import permission_list
-from apps.admin_panel.services.common import ensure_allowed, paginate
+from shared.services import ensure_allowed, paginate
 
 
 def get_permission_list_page(*, actor, query: ListQueryDTO) -> dict:

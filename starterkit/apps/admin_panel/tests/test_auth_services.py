@@ -63,10 +63,10 @@ class LoginServiceTests(TestCase):
         self.assertEqual(wrong.errors, {"non_field_errors": [INVALID_CREDENTIALS_ERROR]})
         self.assertEqual(right.errors, wrong.errors)
 
-    def test_non_staff_cannot_log_in(self):
+    def test_non_staff_can_log_in(self):
         make_user("regular")
         result = login_user(request_with_session(), login_input(username="regular"))
-        self.assertEqual(result.errors, {"non_field_errors": [INVALID_CREDENTIALS_ERROR]})
+        self.assertTrue(result.success)
 
     def test_empty_fields_return_validation_errors(self):
         result = login_user(request_with_session(), login_input(username="", password=""))

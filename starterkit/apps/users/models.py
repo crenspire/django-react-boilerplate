@@ -1,3 +1,3 @@
-from django.db import models
+from apps.users.domain.models import UserProfile
 
-# Create your models here.
+__all__ = ["UserProfile"]

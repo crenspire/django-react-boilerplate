@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Head, Link, router } from "@inertiajs/react"
-import { MoreHorizontal, Pencil, Plus, Trash2, UserX } from "lucide-react"
+import { MoreHorizontal, Pencil, Plus, Trash2, UserCog, UserX } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/Components/ui/avatar"
 import { Button } from "@/Components/ui/button"
 import {
@@ -66,7 +66,8 @@ export default function UsersIndex({ users, pagination, filters, can }) {
                 <TableHead>{sortHeader("username", "User")}</TableHead>
                 <TableHead className="hidden md:table-cell">{sortHeader("email", "Email")}</TableHead>
                 <TableHead>{sortHeader("is_active", "Status")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{sortHeader("is_staff", "Role")}</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead className="hidden sm:table-cell">{sortHeader("is_staff", "Access")}</TableHead>
                 <TableHead className="w-12">
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -75,7 +76,7 @@ export default function UsersIndex({ users, pagination, filters, can }) {
             <TableBody>
               {!users.length && (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={5} className="h-40">
+                  <TableCell colSpan={6} className="h-40">
                     <div className="flex flex-col items-center gap-2 text-center">
                       <UserX className="h-8 w-8 text-muted-foreground" />
                       <p className="font-medium">No users found</p>
@@ -112,11 +113,12 @@ export default function UsersIndex({ users, pagination, filters, can }) {
                   <TableCell>
                     <StatusBadge active={u.is_active} />
                   </TableCell>
+                  <TableCell>{u.role || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <RoleBadge isStaff={u.is_staff} isSuperuser={u.is_superuser} />
                   </TableCell>
                   <TableCell className="text-right">
-                    {(u.can_edit || u.can_delete) && (
+                    {(u.can_edit || u.can_delete || u.can_assign_role) && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 data-[state=open]:bg-muted" aria-label={`Actions for ${u.username}`}>
@@ -130,7 +132,13 @@ export default function UsersIndex({ users, pagination, filters, can }) {
                               Edit
                             </DropdownMenuItem>
                           )}
-                          {u.can_edit && u.can_delete && <DropdownMenuSeparator />}
+                          {u.can_assign_role && (
+                            <DropdownMenuItem className="gap-2" onSelect={() => router.visit(route("admin_user_role", { user_id: u.id }))}>
+                              <UserCog className="h-4 w-4" />
+                              Change role
+                            </DropdownMenuItem>
+                          )}
+                          {(u.can_edit || u.can_assign_role) && u.can_delete && <DropdownMenuSeparator />}
                           {u.can_delete && (
                             <DropdownMenuItem
                               className="gap-2 text-destructive focus:text-destructive"

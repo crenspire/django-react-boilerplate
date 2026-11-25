@@ -60,6 +60,8 @@ INSTALLED_APPS = [
     'inertia',
     'django_celery_beat',
     'apps.admin_panel',
+    'apps.users',
+    'apps.budgets',
     'apps.system',
 ]
 
@@ -78,7 +80,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'main.urls'
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'admin_dashboard'
+LOGIN_REDIRECT_URL = 'workspace'
 
 TEMPLATES = [
     {

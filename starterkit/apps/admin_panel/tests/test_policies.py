@@ -6,6 +6,11 @@ from apps.admin_panel.tests.factories import GROUP_PERMS, USER_PERMS, make_staff
 
 
 class AdminAccessPolicyTests(TestCase):
+    def test_any_active_user_can_sign_in(self):
+        self.assertTrue(policies.can_sign_in(make_user("regular")))
+        self.assertFalse(policies.can_sign_in(make_user("inactive", is_active=False)))
+        self.assertFalse(policies.can_sign_in(AnonymousUser()))
+
     def test_anonymous_cannot_access_admin(self):
         self.assertFalse(policies.can_access_admin(AnonymousUser()))
 
@@ -24,6 +29,13 @@ class AdminAccessPolicyTests(TestCase):
 
 
 class UserPolicyTests(TestCase):
+    def test_role_page_is_offered_to_superusers_for_other_accounts(self):
+        root = make_superuser()
+        target = make_user("target")
+        self.assertTrue(policies.can_assign_role(root, target))
+        self.assertFalse(policies.can_assign_role(root, root))
+        self.assertFalse(policies.can_assign_role(make_staff("s", perms=USER_PERMS), target))
+
     def test_staff_without_model_permissions_cannot_manage_users(self):
         staff = make_staff()
         self.assertFalse(policies.can_view_users(staff))

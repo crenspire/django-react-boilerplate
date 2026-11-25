@@ -29,7 +29,7 @@ export default function Login({ form: initialForm, errors = {} }) {
       <div className="flex flex-col gap-2 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
         <p className="text-balance text-sm text-muted-foreground">
-          Sign in with your staff account to continue
+          Sign in to your account to continue
         </p>
       </div>
 

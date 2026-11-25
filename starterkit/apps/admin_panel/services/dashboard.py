@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser
 from apps.admin_panel.domain import policies
 from apps.admin_panel.selectors import auth as auth_selectors
 from apps.admin_panel.selectors import users as user_selectors
-from apps.admin_panel.services.common import ensure_allowed
+from shared.services import ensure_allowed
 
 RECENT_USERS_LIMIT = 5
 

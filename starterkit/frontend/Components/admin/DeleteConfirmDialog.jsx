@@ -16,6 +16,8 @@ export function DeleteConfirmDialog({
   processing = false,
   title = "Are you sure?",
   description = "This action cannot be undone.",
+  confirmLabel = "Delete",
+  processingLabel = "Deleting...",
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -29,7 +31,7 @@ export function DeleteConfirmDialog({
             Cancel
           </Button>
           <Button variant="destructive" disabled={processing} onClick={onConfirm}>
-            {processing ? "Deleting..." : "Delete"}
+            {processing ? processingLabel : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

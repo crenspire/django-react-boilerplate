@@ -54,7 +54,7 @@ export default function Home() {
   const page = usePage()
   const route = useRoute()
   const isSignedIn = !!page.props.auth?.user
-  const adminHref = isSignedIn ? route("admin_dashboard") : route("login")
+  const appHref = isSignedIn ? route("workspace") : route("login")
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -85,8 +85,8 @@ export default function Home() {
               asChild
               className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-md shadow-violet-500/25"
             >
-              <Link href={adminHref}>
-                {isSignedIn ? "Admin" : "Get started"}
+              <Link href={appHref}>
+                {isSignedIn ? "Workspace" : "Get started"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -125,7 +125,7 @@ export default function Home() {
               asChild
               className="gap-2 h-12 px-8 text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
-              <Link href={adminHref}>
+              <Link href={appHref}>
                 {isSignedIn ? "Open admin" : "Get started"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -205,7 +205,7 @@ export default function Home() {
               Home
             </Link>
             <Link
-              href={adminHref}
+              href={appHref}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors hover:underline underline-offset-4"
             >
               Admin

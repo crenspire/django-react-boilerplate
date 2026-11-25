@@ -13,7 +13,7 @@ import {
 import { SidebarNav } from "@/Components/admin/SidebarNav"
 import { UserMenu } from "@/Components/admin/UserMenu"
 
-export function AppSidebar({ homeHref, navItems, user, isMobile, theme, onToggleTheme, onLogout, onNavigate }) {
+export function AppSidebar({ homeHref, subtitle, navItems, user, isMobile, theme, onToggleTheme, onLogout, onNavigate }) {
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
@@ -26,7 +26,7 @@ export function AppSidebar({ homeHref, navItems, user, isMobile, theme, onToggle
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Django Inertia</span>
-                  <span className="truncate text-xs text-muted-foreground">Admin console</span>
+                  <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
                 </div>
               </Link>
             </SidebarMenuButton>

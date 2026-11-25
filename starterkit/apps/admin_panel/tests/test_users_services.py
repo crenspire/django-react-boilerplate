@@ -6,7 +6,7 @@ from django.http import Http404
 from django.test import TestCase
 from unittest import mock
 
-from apps.admin_panel.dto.common import ListQueryDTO
+from shared.dto import ListQueryDTO
 from apps.admin_panel.dto.users import UserFormInputDTO
 from apps.admin_panel.services import users as user_services
 from apps.admin_panel.tests.factories import (

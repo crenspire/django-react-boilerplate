@@ -31,6 +31,20 @@ class AccessTests(InertiaClientMixin, TestCase):
         self.assertEqual(self.client.get("/admin/users/").status_code, 403)
         self.assertEqual(self.client.get("/admin/groups/").status_code, 403)
 
+    def test_non_staff_gets_403_on_every_admin_page(self):
+        target = make_user("target")
+        self.client.force_login(make_user("regular"))
+        for url in (
+            "/admin/",
+            "/admin/users/",
+            "/admin/users/create/",
+            f"/admin/users/{target.pk}/edit/",
+            "/admin/groups/",
+            "/admin/groups/create/",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+
     def test_delete_requires_post(self):
         self.client.force_login(make_superuser())
         target = make_user("target")
@@ -174,7 +188,7 @@ class AuthViewTests(InertiaClientMixin, TestCase):
             **INERTIA_HEADERS,
         )
 
-        self.assertRedirects(response, "/admin/", fetch_redirect_response=False)
+        self.assertRedirects(response, "/workspace/", fetch_redirect_response=False)
 
     def test_post_without_csrf_token_is_rejected(self):
         client = Client(enforce_csrf_checks=True)

@@ -6,10 +6,10 @@ from django.db import IntegrityError, transaction
 from django.http import Http404
 
 from apps.admin_panel.domain import policies
-from apps.admin_panel.dto.common import DeleteResultDTO, ListQueryDTO
+from shared.dto import DeleteResultDTO, ListQueryDTO
 from apps.admin_panel.dto.groups import GroupFormInputDTO, GroupFormResultDTO, GroupListItemDTO
 from apps.admin_panel.selectors import groups as group_selectors
-from apps.admin_panel.services.common import (
+from shared.services import (
     ensure_allowed,
     merge_errors,
     paginate,

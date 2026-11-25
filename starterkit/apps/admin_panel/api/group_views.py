@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 from inertia import render
 
-from apps.admin_panel.api.request_utils import (
+from shared.request_utils import (
     get_request_data,
     parse_id_list,
     parse_list_query,
